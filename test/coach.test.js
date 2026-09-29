@@ -1,6 +1,6 @@
 const assert = require('assert');
 const C = require('../coach.js');
-const settings = { stack: 300, villain: 'random' };
+const settings = { stack: 200, villain: 'random', straddle: 'random' };
 const t0 = Date.now();
 const tally = {};
 for (const kind of ['open', 'facing', 'decision', 'sizing']) {

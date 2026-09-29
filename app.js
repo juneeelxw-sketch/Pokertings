@@ -12,7 +12,7 @@
   function fresh() {
     return {
       v: 1,
-      settings: { mode: 'mixed', villain: 'random', stack: 300 },
+      settings: { mode: 'mixed', villain: 'random', stack: 200, straddle: 'random' },
       stats: { hands: 0, points: 0, max: 0, best: 0, ok: 0, streak: 0, bestStreak: 0, evLost: 0, pre: 0, prePlayed: 0, preCoach: 0, byKind: {}, leaks: {} },
       quiz: { n: 0, right: 0 },
       live: { hands: 0, played: 0, started: null, history: [] },
@@ -23,6 +23,8 @@
     const saved = JSON.parse(localStorage.getItem(KEY));
     if (saved && saved.v === 1) S = Object.assign(fresh(), saved);
   } catch (e) { /* storage unavailable: run in memory */ }
+  // Earlier versions had no straddle setting and defaulted to $300 stacks.
+  if (!S.settings.straddle) { S.settings.straddle = 'random'; S.settings.stack = 200; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } }
 
   // ---------- Tabs ----------
@@ -52,11 +54,13 @@
     document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === S.settings.mode)));
     $('#villainSel').value = S.settings.villain;
     $('#stackSel').value = String(S.settings.stack);
+    $('#straddleSel').value = S.settings.straddle;
   }
   document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => {
     S.settings.mode = b.dataset.mode; save(); syncControls(); deal();
   }));
   $('#villainSel').addEventListener('change', e => { S.settings.villain = e.target.value; save(); deal(); });
+  $('#straddleSel').addEventListener('change', e => { S.settings.straddle = e.target.value; save(); deal(); });
   $('#stackSel').addEventListener('change', e => { S.settings.stack = +e.target.value; save(); deal(); });
 
   function renderScoreline() {
@@ -77,7 +81,7 @@
     $('#actions').innerHTML = '';
     // Let the "Dealing" frame paint before the equity maths runs.
     setTimeout(() => {
-      cur = C.build(S.settings.mode, { stack: S.settings.stack, villain: S.settings.villain });
+      cur = C.build(S.settings.mode, { stack: S.settings.stack, villain: S.settings.villain, straddle: S.settings.straddle });
       renderSpot();
     }, 20);
   }
@@ -88,7 +92,7 @@
     const initials = p ? p.type.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3) : 'You';
     const villain = p
       ? `<div class="villain"><div class="vbadge" aria-hidden="true">${esc(initials)}</div><div><div class="who">${esc(p.name)} <em>· ${esc(p.type)} · VPIP ${esc(p.vpip)}</em></div><p>${esc(p.blurb)}</p></div></div>`
-      : `<div class="villain"><div class="vbadge" aria-hidden="true">8</div><div><div class="who">8-handed table <em>· blinds $1/$1</em></div><p>Typical raise here is $18, sometimes $30. Nobody has raised yet.</p></div></div>`;
+      : `<div class="villain"><div class="vbadge" aria-hidden="true">9</div><div><div class="who">9-handed table <em>· blinds $1/$1${s.straddler ? ` · $${C.STRADDLE} straddle (${esc(s.straddler)})` : ''}</em></div><p>Typical raise here is $18, sometimes $30. Nobody has raised yet.</p></div></div>`;
     const log = `<div class="log">${s.log.map(l => `<span>${esc(l)}</span>`).join('')}</div>`;
     const board = s.board.length
       ? `<div class="board">${cardsHTML(s.board)}</div>`
@@ -261,6 +265,7 @@
       <p>Implied odds are the extra money you expect to win <b>after</b> you hit. They justify calls that lose on direct pot odds, but only when stacks are deep and the opponent pays off.</p>
       <ul>
         <li><b>Small pairs</b> flop a set about 1 time in 8.5. To call a raise just to hit a set, you want the effective stack to be at least <b>15× the call</b>. $18 raise: $270 behind. $30 raise: $450 behind.</li>
+        <li>With a <b>$200 buy-in</b>, calling $18 with 22–99 just to hit a set is a fold. Your stack isn't deep enough, and neither is the raiser's if they're shorter. Buying in bigger only helps if you are the better player in the deep pots. Until then, $200 caps your losses per buy-in.</li>
         <li><b>Suited connectors</b> need even more, about 20×, plus position and an opponent who pays (stations, maniacs). Against a nit, fold them.</li>
         <li><b>Reverse implied odds</b>: hands like KJo and A9o win small pots when they are ahead and lose big ones when they are behind. That is why they are folds against big raises.</li>
       </ul>`],
@@ -283,13 +288,28 @@
         <tr><td>⅔ pot</td><td class="n">40%</td></tr><tr><td>Pot</td><td class="n">50%</td></tr>
       </tbody></table></div>
       <p><b>Preflop sizing at your table:</b> open to $12–18 with a tight range and use the same size every time. Add $3–5 per limper. Don't open to $6, because five players call and you are out of position in a huge multiway pot. Don't limp.</p>`],
-    ['A preflop plan for this game (8-handed)', `
-      <p>Raise-first-in ranges. Fold anything not listed. When there are limpers, use the range from two seats earlier.</p>
-      <div class="tbl"><table><thead><tr><th>Seat</th><th>Share</th><th>Raise with</th></tr></thead><tbody>
+    ['A preflop plan for this game (9-handed)', `
+      <p>Raise-first-in ranges. Fold anything not listed. Pick the row by <b>how many players are still to act behind you</b>, counting the blinds and any straddler. When there are limpers, use the row two seats earlier.</p>
+      <div class="tbl"><table><thead><tr><th>Seat (no straddle)</th><th>Share</th><th>Raise with</th></tr></thead><tbody>
         ${Object.entries(C.OPEN).map(([pos, r]) => `<tr><td><b>${pos}</b></td><td class="n">${pct(E.rangePct(E.parseRange(r)))}</td><td class="mono" style="font-size:13px">${r}</td></tr>`).join('')}
       </tbody></table></div>
+      <p class="small">Players behind: UTG 8, UTG+1 7, UTG+2 6, MP 5, HJ 4, CO 3, BTN 2. With a UTG straddle everyone has one extra player behind, because the straddler acts last. So UTG+1 plays the UTG row and the button plays the CO row.</p>
       <p><b>Facing an $18 raise</b>: re-raise QQ+ and AK (and more against maniacs). Call with pairs when the stack is 15× the call, and with AQ, AJs, KQs against looser openers. Fold the rest. <b>Facing $30</b>: tighten more still.</p>
       <p>Your overall VPIP (the share of hands where you put money in voluntarily) should be around <b>18–25%</b>. A "gambler" is usually at 50% or more.</p>`],
+    ['Straddles and the Mississippi', `
+      <p>A straddle is a voluntary third blind, here $${C.STRADDLE}, posted before the cards are dealt. The straddler acts last before the flop.</p>
+      <ul>
+        <li><b>UTG straddle</b>: UTG posts $${C.STRADDLE}. Action starts at UTG+1, and UTG acts last preflop but first after the flop. That is the worst seat at the table.</li>
+        <li><b>Mississippi straddle</b>: the button posts $${C.STRADDLE}. In this trainer, action starts at UTG as normal, skips the button, and the button acts last preflop. It stays in position after the flop. House rules vary; some games start the action from the small blind.</li>
+      </ul>
+      <p><b>What it changes for you</b></p>
+      <ul>
+        <li>There is more dead money ($4 instead of $2), so pots get bigger and stacks are effectively shorter. $200 is only 100 straddles deep.</li>
+        <li>The straddler acts after everyone preflop, so count them as one more player behind you. Play one row tighter from the preflop chart.</li>
+        <li>Raise to about $18 over a straddle. A $6 raise gets called by everyone.</li>
+        <li>Limping now costs $${C.STRADDLE}, and it is still a leak.</li>
+      </ul>
+      <p class="callout"><b>Should you straddle?</b> A UTG straddle is a blind bet out of position. It loses money over time, and it is a classic "gambler" habit. Skip it. A Mississippi straddle is much less bad because you keep position, but it still puts $${C.STRADDLE} in with a random hand. Posting a straddle does not count toward your VPIP. Calling a raise after you straddled does.</p>`],
     ['Session discipline', `
       <ul>
         <li><b>Set a stop-loss before you sit down</b>, for example three buy-ins. When you hit it, leave, even if the game looks good.</li>

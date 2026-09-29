@@ -33,7 +33,7 @@
     tag: {
       name: 'Tina', type: 'TAG', vpip: '18–24%',
       blurb: 'Solid regular. Raises a sensible range, bets for value and with good draws, bluffs sometimes.',
-      exploit: 'Respect her 3-bets and turn/river raises. Play in position, avoid marginal calls out of position.',
+      exploit: 'Respect their 3-bets and turn/river raises. Play in position, avoid marginal calls out of position.',
       open18: '55+, A9s+, KTs+, QTs+, JTs, T9s, 98s, AJo+, KQo', open30: '88+, ATs+, KQs, AQo+',
       pf: '55+, A9s+, KTs+, QTs+, JTs, T9s, 98s, AJo+, KQo', pf3: '99+, AJs+, KQs, AQo+',
       bet: { strong: .85, medium: .4, draw: .6, weak: .15, air: .3 }, shove: .5,
@@ -93,17 +93,33 @@
     return clamp(p.cont[cls] * adj, 0, 1);
   }
 
-  // ---------- Preflop tables (8-handed, $1/$1, big opens) ----------
-  const POS = ['UTG', 'UTG+1', 'MP', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+  // ---------- Preflop tables (9-handed, $1/$1, big opens, straddles) ----------
+  const STRADDLE = 2;
+  const POS = ['UTG', 'UTG+1', 'UTG+2', 'MP', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+  const POST_ORDER = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'HJ', 'CO', 'BTN'];
+  // Opening ranges are chosen by how many players are still to act behind you.
   const OPEN = {
     'UTG': '77+, ATs+, KQs, AQo+',
-    'UTG+1': '66+, A9s+, KJs+, QJs, AJo+, KQo',
+    'UTG+1': '77+, A9s+, KJs+, AQo+, KQo',
+    'UTG+2': '66+, A9s+, KJs+, QJs, AJo+, KQo',
     'MP': '55+, A8s+, KTs+, QTs+, JTs, AJo+, KQo',
     'HJ': '44+, A5s+, K9s+, Q9s+, J9s+, T9s, ATo+, KJo+',
     'CO': '22+, A2s+, K8s+, Q9s+, J9s+, T8s+, 98s, 87s, A9o+, KTo+, QJo',
     'BTN': '22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 97s+, 86s+, 76s, 65s, 54s, A7o+, KTo+, QTo+, JTo',
     'SB': '22+, A2s+, K8s+, Q9s+, J9s+, T9s, 98s, A8o+, KJo+, QJo',
   };
+  const BY_BEHIND = { 8: 'UTG', 7: 'UTG+1', 6: 'UTG+2', 5: 'MP', 4: 'HJ', 3: 'CO', 2: 'BTN', 1: 'BTN' };
+  const STRADDLE_NAMES = { none: 'No straddle', utg: 'UTG straddle', btn: 'Mississippi (button) straddle' };
+
+  // Works out who has posted what and the preflop acting order. The straddler acts last preflop.
+  function tableSetup(settings) {
+    let st = settings.straddle || 'none';
+    if (st === 'random') st = pickWeighted({ none: 2, utg: 1, btn: 1 });
+    const straddler = st === 'utg' ? 'UTG' : st === 'btn' ? 'BTN' : null;
+    const order = POS.filter(p => p !== straddler).concat(straddler ? [straddler] : []);
+    const posted = p => (p === 'SB' || p === 'BB' ? 1 : p === straddler ? STRADDLE : 0);
+    return { st, straddler, order, posted, dead: 2 + (straddler ? STRADDLE : 0), toCall: straddler ? STRADDLE : 1 };
+  }
   const OPEN_KEYS = {};
   for (const k in OPEN) OPEN_KEYS[k] = keysOf(OPEN[k]);
   const PREMIUM = keysOf('QQ+, AKs, AKo');
@@ -136,43 +152,54 @@
 
   // ---------- Preflop: action folds (or limps) to you ----------
   function buildOpen(settings) {
+    const T = tableSetup(settings);
     const hero = heroPreflopHand();
-    const pos = pick(POS.slice(0, 7));
-    const idx = POS.indexOf(pos);
-    const limpers = idx === 0 ? 0 : pickWeighted({ 0: 5, 1: 3, 2: 2 }) | 0;
+    const seats = T.order.filter(p => p !== 'BB' && p !== T.straddler);
+    const pos = pick(seats);
+    const idx = T.order.indexOf(pos);
+    const limpers = Math.min(idx, pickWeighted({ 0: 5, 1: 3, 2: 2 }) | 0);
     const key = E.handKey(hero[0], hero[1]);
-    // With limpers in front, raise a tighter range (two seats earlier).
-    const effPos = limpers ? POS[Math.max(0, Math.min(idx, 6) - 2)] : pos;
-    const widerPos = POS[Math.min(POS.indexOf(effPos) + 1, 5)];
+    const behind = T.order.length - 1 - idx;
+    // With limpers in front, raise a tighter range (as if two more players were behind you).
+    let effPos, widerPos;
+    if (pos === 'SB') { effPos = limpers ? 'HJ' : 'SB'; widerPos = limpers ? 'CO' : 'BTN'; }
+    else {
+      const eff = Math.min(8, behind + (limpers ? 2 : 0));
+      effPos = BY_BEHIND[eff]; widerPos = BY_BEHIND[Math.max(2, eff - 1)];
+    }
     const inRange = OPEN_KEYS[effPos].has(key);
-    const near = !inRange && OPEN_KEYS[widerPos === 'SB' ? 'BTN' : widerPos].has(key);
-    const pot = 2 + limpers;
-    const log = [];
-    const before = POS.slice(0, idx);
-    const limpSeats = before.slice(-limpers).slice(0, limpers);
-    for (const p of before) log.push(limpSeats.includes(p) && limpers ? `${p} limps $1` : `${p} folds`);
+    const near = !inRange && OPEN_KEYS[widerPos].has(key);
+    const pot = T.dead + limpers * T.toCall;
+    const log = T.straddler ? [`${T.straddler} straddles $${STRADDLE}`] : [];
+    const before = T.order.slice(0, idx);
+    const limpSeats = limpers ? before.slice(-limpers) : [];
+    for (const p of before) log.push(limpSeats.includes(p) ? `${p} limps $${T.toCall}` : `${p} folds`);
+    const limpCost = T.toCall - T.posted(pos);
     return {
-      kind: 'open', hero, pos, limpers, key, effPos, inRange, near, pot,
+      kind: 'open', hero, pos, limpers, key, effPos, inRange, near, pot, behindN: behind,
+      straddle: T.st, straddler: T.straddler,
       stack: settings.stack, log, board: [],
       actions: [
         { id: 'fold', label: 'Fold' },
-        { id: 'limp', label: pos === 'SB' ? 'Complete $1' : 'Limp $1' },
+        { id: 'limp', label: pos === 'SB' ? `Complete $${limpCost}` : `Limp $${limpCost}` },
         { id: 'r6', label: 'Raise $6', amt: 6 },
         { id: 'r12', label: 'Raise $12', amt: 12 },
         { id: 'r18', label: 'Raise $18', amt: 18 },
         { id: 'r30', label: 'Raise $30', amt: 30 },
       ],
-      prompt: limpers ? `${limpers} limper${limpers > 1 ? 's' : ''} in front of you. Your move.` : 'Folded to you. Your move.',
+      prompt: (T.straddler ? `${T.straddler} straddled. ` : '') +
+        (limpers ? `${limpers} limper${limpers > 1 ? 's' : ''} in front of you. Your move.` : 'Folded to you. Your move.'),
     };
   }
   function gradeOpen(s, a) {
     const g = { best: [], ok: [], notes: [] };
     const premium = PREMIUM.has(s.key);
     const spec = SPECULATIVE.has(s.key);
-    const late = ['CO', 'BTN', 'SB'].includes(s.pos);
+    const late = s.behindN <= 3 || s.pos === 'SB';
+    const sizeLimpers = s.limpers + (s.straddler ? 1 : 0);
     if (s.inRange) {
-      if (s.limpers === 0) { g.best.push('r12', 'r18'); g.ok.push('r30', 'r6'); }
-      else if (s.limpers === 1) { g.best.push('r18'); g.ok.push('r12', 'r30'); }
+      if (sizeLimpers === 0) { g.best.push('r12', 'r18'); g.ok.push('r30', 'r6'); }
+      else if (sizeLimpers === 1) { g.best.push('r18'); g.ok.push('r12', 'r30'); }
       else { g.best.push('r18', 'r30'); g.ok.push('r12'); }
       if (!premium && spec && s.limpers && late) g.ok.push('limp');
       g.headline = `${s.key} is a raise from ${s.pos}${s.limpers ? ' over limpers' : ''}.`;
@@ -186,11 +213,13 @@
       g.headline = `${s.key} is a fold from ${s.pos}.`;
     }
     const range = OPEN_KEYS[s.effPos];
-    g.notes.push(`Coach's ${s.limpers ? 'raising range over limpers' : 'opening range'} from ${s.pos} is about ${pctStr(E.rangePct(range))} of hands: ${OPEN[s.effPos]}.`);
+    g.notes.push(`${s.behindN} player${s.behindN === 1 ? '' : 's'} still to act behind you. Coach's ${s.limpers ? 'raising range over limpers' : 'opening range'} here is about ${pctStr(E.rangePct(range))} of hands: ${OPEN[s.effPos]}.`);
+    if (s.straddler) g.notes.push(`The ${s.straddler} straddle adds $${STRADDLE} of dead money and acts last before the flop, so count the straddler as one more player behind you. Raise to about $18 rather than $12.`);
     if (s.limpers) g.notes.push('With limpers, raise a tighter range and raise bigger (about $15 plus $3–5 per limper). Limping behind builds a multiway pot you will usually lose with a weak hand.');
     else g.notes.push('At a table where $18 is a normal raise, a $12–$18 open is fine. Pick one size and use it with all your hands so the size gives nothing away.');
-    if (a === 'limp') g.notes.push('Limping is the classic home-game leak. It invites an $18 raise and you either fold (losing $1) or call out of position with a weak hand.');
-    if (a === 'r6') g.notes.push('$6 is too small at this table. Five people call and you play a huge multiway pot. Make it bigger or fold.');
+    if (a === 'limp') g.notes.push(`Limping is the classic home-game leak. It invites an $18 raise and you either fold (losing $${s.pot > 3 && s.straddler ? STRADDLE : 1}) or call out of position with a weak hand.`);
+    if (a === 'r6' && s.straddler) g.notes.push('$6 is barely a min-raise over a $2 straddle. Everyone behind gets a great price to call.');
+    else if (a === 'r6') g.notes.push('$6 is too small at this table. Five people call and you play a huge multiway pot. Make it bigger or fold.');
     if (a === 'r30' && !premium) g.notes.push('$30 with a non-premium hand risks a lot and only gets called by better hands.');
     if (!s.inRange && a !== 'fold') g.leak = a === 'limp' ? 'Limping' : 'Too loose preflop';
     else if (s.inRange && a === 'fold') g.leak = 'Too tight preflop';
@@ -202,36 +231,41 @@
 
   // ---------- Preflop: facing a big raise ----------
   function buildFacing(settings) {
+    const T = tableSetup(settings);
     const vk = settings.villain === 'random' ? pick(VILLAIN_KEYS) : settings.villain;
     const p = PROFILES[vk];
     const size = vk === 'maniac' ? pick([18, 30, 30]) : pick([18, 18, 30]);
-    let oIdx, hIdx;
-    do { oIdx = rnd(6); hIdx = oIdx + 1 + rnd(7 - oIdx); } while (hIdx > 7);
+    const n = T.order.length;
+    // Openers come from the non-blind seats; the hero acts somewhere after them.
+    const openers = T.order.filter(x => !['SB', 'BB', T.straddler].includes(x) && T.order.indexOf(x) < n - 1);
+    const openPos = pick(openers);
+    const oIdx = T.order.indexOf(openPos);
+    const hIdx = oIdx + 1 + rnd(n - 1 - oIdx);
+    const heroPos = T.order[hIdx];
     const callers = hIdx - oIdx > 1 && Math.random() < 0.35 ? 1 : 0;
+    const callerPos = callers ? T.order[hIdx - 1] : null;
     const hero = heroPreflopHand();
-    const heroPos = POS[hIdx], openPos = POS[oIdx];
-    const posted = heroPos === 'SB' ? 1 : heroPos === 'BB' ? 1 : 0;
-    const call = size - posted;
-    const pot = 2 + size * (1 + callers);
-    const oop = heroPos === 'SB' || heroPos === 'BB';
+    const call = size - T.posted(heroPos);
+    const pot = T.dead - T.posted(openPos) - (callerPos ? T.posted(callerPos) : 0) + size * (1 + callers);
+    const oop = POST_ORDER.indexOf(heroPos) < POST_ORDER.indexOf(openPos);
     const threeBet = r5(size * (oop ? 3.5 : 3) + size * callers);
-    const log = [];
-    let callerPos = null;
+    const log = T.straddler ? [`${T.straddler} straddles $${STRADDLE}`] : [];
     for (let i = 0; i < hIdx; i++) {
-      if (i === oIdx) log.push(`${POS[i]} (${p.name}, ${p.type}) raises to $${size}`);
-      else if (i > oIdx && callers && !callerPos && i === hIdx - 1) { callerPos = POS[i]; log.push(`${POS[i]} calls $${size}`); }
-      else if (i < 6) log.push(`${POS[i]} folds`);
+      const x = T.order[i];
+      if (i === oIdx) log.push(`${x} (${p.name}, ${p.type}) raises to $${size}`);
+      else if (x === callerPos) log.push(`${x} calls $${size}`);
+      else log.push(`${x} folds`);
     }
     const s = {
       kind: 'facing', vk, hero, heroPos, openPos, size, callers, callerPos, call, pot, stack: settings.stack,
-      key: E.handKey(hero[0], hero[1]), oop, threeBet, log, board: [],
+      key: E.handKey(hero[0], hero[1]), oop, threeBet, log, board: [], straddle: T.st, straddler: T.straddler,
       range: size >= 30 ? p.open30 : p.open18,
       actions: [
         { id: 'fold', label: 'Fold' },
         { id: 'call', label: `Call $${call}` },
         { id: '3bet', label: `3-bet to $${Math.min(threeBet, settings.stack)}` },
       ],
-      prompt: `${p.name} raised to $${size}${callers ? ' and got a call' : ''}. You are in the ${heroPos}.`,
+      prompt: `${p.name} raised to $${size}${callers ? ' and got a call' : ''}. You are in the ${heroPos}${heroPos === T.straddler ? ' (you straddled)' : ''}.`,
     };
     const ranges = [combos(s.range)];
     if (callers) ranges.push(combos(CALLER_RANGE));
@@ -672,7 +706,7 @@
     return QUIZ[k]();
   }
 
-  const api = { PROFILES, VILLAIN_KEYS, CLASS_NAMES, OPEN, POS, build, grade, quizQuestion, pctStr, money };
+  const api = { PROFILES, VILLAIN_KEYS, CLASS_NAMES, OPEN, POS, STRADDLE, STRADDLE_NAMES, build, grade, quizQuestion, pctStr, money };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PokerCoach = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -7,7 +7,7 @@ Open `index.html` in a browser. There's no build step and no server.
 
 ## What's inside
 
-- **Train**: hands dealt against five opponent types (Nit, TAG, LAG, Calling station, Maniac)
+- **Train**: 9-handed hands (with optional UTG or Mississippi straddles) dealt against five opponent types (Nit, TAG, LAG, Calling station, Maniac)
   - *Preflop*: first in (open, limp or fold, and the raise size) and facing $18/$30 raises (fold, call or 3-bet)
   - *Call or fold*: an opponent bets or shoves on the flop, turn or river. It's graded by expected value against that opponent's betting range.
   - *Bet sizing*: the opponent checks to you. Choose check, ⅓, ⅔, pot or all-in. It's graded by expected value against their checking range and how often they call.
