@@ -83,6 +83,25 @@
   }
   const category = score => Math.floor(score / P16);
 
+  // Plain-English name for an evaluated hand, e.g. "Two pair, kings and sevens".
+  const ONE = { 14: 'ace', 13: 'king', 12: 'queen', 11: 'jack', 10: 'ten', 9: 'nine', 8: 'eight', 7: 'seven', 6: 'six', 5: 'five', 4: 'four', 3: 'three', 2: 'two' };
+  const MANY = { 14: 'aces', 13: 'kings', 12: 'queens', 11: 'jacks', 10: 'tens', 9: 'nines', 8: 'eights', 7: 'sevens', 6: 'sixes', 5: 'fives', 4: 'fours', 3: 'threes', 2: 'twos' };
+  function describe(score) {
+    const cat = category(score);
+    const r = [4, 3, 2, 1, 0].map(i => Math.floor(score / Math.pow(16, i)) % 16);
+    switch (cat) {
+      case 8: return r[0] === 14 ? 'Royal flush' : `Straight flush, ${ONE[r[0]]} high`;
+      case 7: return `Four ${MANY[r[0]]}`;
+      case 6: return `Full house, ${MANY[r[0]]} full of ${MANY[r[1]]}`;
+      case 5: return `Flush, ${ONE[r[0]]} high`;
+      case 4: return `Straight, ${ONE[r[0]]} high`;
+      case 3: return `Three ${MANY[r[0]]}`;
+      case 2: return `Two pair, ${MANY[r[0]]} and ${MANY[r[1]]}`;
+      case 1: return `Pair of ${MANY[r[0]]}`;
+      default: return ONE[r[0]][0].toUpperCase() + ONE[r[0]].slice(1) + ' high';
+    }
+  }
+
   // ---------- Ranges ----------
   function classKey(hi, lo, t) {
     const a = rankChar(hi), b = rankChar(lo);
@@ -313,7 +332,7 @@
   const api = {
     RANKS, SUITS, SUIT_SYM, CAT_NAMES,
     card, rankOf, suitOf, rankChar, cardStr, parseCard,
-    evaluate, category, handKey, parseRange, combosForKey, rangeCombos, rangePct, comboCount,
+    evaluate, category, describe, handKey, parseRange, combosForKey, rangeCombos, rangePct, comboCount,
     equityMC, comboEquities, riverOuts, classify,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

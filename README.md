@@ -7,6 +7,8 @@ Open `index.html` in a browser. There's no build step and no server.
 
 ## What's inside
 
+- **Course** (start here): 16 beginner lessons in 5 modules. Hand rankings → reading the board → how a hand plays out → position → hand shorthand → which hands to play → facing big raises → what you flopped → outs → pot odds → player types → why you bet → calling bets → bankroll → tilt → a personal game plan. Each lesson has short reading pages, then a practice round with fresh questions every time; you have to pass it to unlock the next lesson.
+
 - **Train**: 9-handed hands (with optional UTG or Mississippi straddles) dealt against five opponent types (Nit, TAG, LAG, Calling station, Maniac)
   - *Preflop*: first in (open, limp or fold, and the raise size) and facing $18/$30 raises (fold, call or 3-bet)
   - *Call or fold*: an opponent bets or shoves on the flop, turn or river. It's graded by expected value against that opponent's betting range.
@@ -21,6 +23,7 @@ Progress is stored in your browser only (localStorage).
 
 - `engine.js`: card evaluator, range parser, Monte Carlo and exact equity, hand classifier
 - `coach.js`: villain profiles, preflop charts, scenario generation, grading, quiz
+- `course.js`: the beginner course (lessons, question generators, game plan)
 - `app.js`, `index.html`: the interface
 
 ## Tests

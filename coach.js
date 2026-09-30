@@ -706,7 +706,7 @@
     return QUIZ[k]();
   }
 
-  const api = { PROFILES, VILLAIN_KEYS, CLASS_NAMES, OPEN, POS, STRADDLE, STRADDLE_NAMES, build, grade, quizQuestion, pctStr, money };
+  const api = { PROFILES, VILLAIN_KEYS, CLASS_NAMES, OPEN, POS, STRADDLE, STRADDLE_NAMES, build, grade, quizQuestion, QUIZ, OPEN_KEYS, PREMIUM, pctStr, money };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PokerCoach = api;
 })(typeof window !== 'undefined' ? window : globalThis);

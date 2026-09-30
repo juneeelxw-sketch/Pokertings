@@ -61,4 +61,11 @@ t('classification', () => {
   assert.strictEqual(E.classify(h('Ks Jd'), h('Tc 7h 2c 3s 4d')).cls, 'air');
   assert.strictEqual(E.classify(h('7s 6d'), h('Kc 7h 2c')).label, 'Second pair');
 });
+t('describe', () => {
+  assert.strictEqual(E.describe(ev('Kh Kd 7c 7s 2d 3c 4h')), 'Two pair, kings and sevens');
+  assert.strictEqual(E.describe(ev('Ah Kh Qh Jh Th 2c 3d')), 'Royal flush');
+  assert.strictEqual(E.describe(ev('9s 9h 9d 2c 2s 3s 4d')), 'Full house, nines full of twos');
+  assert.strictEqual(E.describe(ev('Ac 2d 3s 4h 5c Kd Qd')), 'Straight, five high');
+  assert.strictEqual(E.describe(ev('Ac Jd 3s 4h 8c')), 'Ace high');
+});
 console.log(`\n${n} tests passed`);

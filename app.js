@@ -31,10 +31,11 @@
   const tabs = document.querySelectorAll('[role="tab"]');
   function showTab(name) {
     tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
-    for (const v of ['train', 'quiz', 'learn', 'stats']) $('#view-' + v).hidden = v !== name;
+    for (const v of ['course', 'train', 'quiz', 'learn', 'stats']) $('#view-' + v).hidden = v !== name;
     if (name === 'stats') renderStats();
+    if (name === 'course' && window.PokerCourse) window.PokerCourse.render();
     if (name === 'quiz' && !quizQ) nextQuiz();
-    try { localStorage.setItem(KEY + '.tab', name); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(KEY + '.tab2', name); } catch (e) { /* ignore */ }
   }
   tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
 
@@ -437,10 +438,10 @@
   syncControls();
   renderScoreline();
   renderLessons();
-  let startTab = 'train';
-  try { startTab = localStorage.getItem(KEY + '.tab') || 'train'; } catch (e) { /* ignore */ }
+  let startTab = 'course';
+  try { startTab = localStorage.getItem(KEY + '.tab2') || 'course'; } catch (e) { /* ignore */ }
   const hashTab = (location.hash || '').slice(1);
-  if (['train', 'quiz', 'learn', 'stats'].includes(hashTab)) startTab = hashTab;
+  if (['course', 'train', 'quiz', 'learn', 'stats'].includes(hashTab)) startTab = hashTab;
   showTab(startTab);
   deal();
 })();

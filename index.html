@@ -205,7 +205,78 @@ details[open] summary::after { content: "–"; }
 .hist { font-size: 13px; }
 .hist td { padding: 4px 14px 4px 0; border-bottom: 1px solid var(--line); }
 
+/* Course */
+#course { display: grid; gap: 14px; }
+.c-intro { display: grid; gap: 10px; padding-block: 6px; }
+.c-intro h2 { font-size: 36px; }
+.c-progress { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; max-width: 420px; }
+.c-progress div { height: 100%; background: var(--accent); }
+.c-module { display: grid; gap: 8px; }
+.c-lessons { display: grid; gap: 6px; }
+.c-lesson { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 15px; }
+.c-lesson .c-num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-mono); font-size: 13px; border: 1px solid var(--line); }
+.c-lesson.done .c-num { background: var(--good-bg); color: var(--good); border-color: var(--good); }
+.c-lesson.open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.c-lesson.open .c-num { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.c-lesson.locked { opacity: .55; cursor: default; }
+.c-lesson .c-state { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-family: var(--f-mono); }
+.c-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.c-read { gap: 12px; font-size: 16px; }
+.c-read h3 { font-size: 26px; }
+.c-read ul, .c-read ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.c-nav { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); border-radius: 12px; padding: 11px 18px; font-weight: 600; }
+.cardrow { display: inline-flex; gap: 4px; vertical-align: middle; flex-wrap: wrap; }
+.vs { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: flex-end; }
+.vs > div { display: grid; gap: 4px; }
+.example { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.ladder { display: grid; gap: 6px; }
+.lrow { display: grid; grid-template-columns: minmax(96px, 150px) 1fr auto; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.lname { font-weight: 600; }
+.lodds { font-size: 13px; color: var(--muted); }
+.seatmap { margin: 0; display: grid; gap: 6px; justify-items: center; }
+.seatmap svg { width: 100%; max-width: 420px; height: auto; }
+.seatmap figcaption { font-size: 13px; color: var(--muted); text-align: center; }
+.tablefelt { fill: var(--felt); stroke: var(--felt-edge); stroke-width: 6; }
+.tablet { fill: var(--on-felt-dim); font-size: 11px; font-family: var(--f-body); }
+.seat { fill: var(--surface); stroke: var(--line); stroke-width: 2; }
+.seat.on { fill: var(--chip); stroke: var(--chip); }
+.seatt { fill: var(--ink); font-size: 10px; font-weight: 600; font-family: var(--f-body); }
+.seatt.on { fill: #1c1606; }
+.dbtn { fill: #ffffff; stroke: #1c1606; stroke-width: 1.5; }
+.dbtnt { fill: #1c1606; font-size: 10px; font-weight: 700; font-family: var(--f-body); }
+.center { display: flex; justify-content: center; }
+.c-q h3 { font-size: 22px; }
+.c-visual { display: grid; gap: 10px; }
+.qopts.wide { grid-template-columns: 1fr; }
+.qopts.wide button { font-family: var(--f-body); font-size: 15px; text-align: left; }
+.mini-felt { background: var(--felt); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.on-felt { color: var(--on-felt-dim); }
+.mini-felt .row .on-felt { color: var(--on-felt); }
+.okline { color: var(--ok); font-weight: 600; }
+.c-q .verdict { flex-direction: column; gap: 8px; }
+.c-exp { display: block; font-size: 15px; line-height: 1.55; }
+.c-exp .vs { margin-top: 6px; }
+.dots { display: flex; flex-wrap: wrap; gap: 6px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); }
+.dot.cur { background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); }
+.dot.y { background: var(--good); }
+.dot.n { background: var(--bad); }
+.c-result { justify-items: start; }
+.c-result h3 { font-size: 30px; }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.plan .plangrid, .c-plan .plangrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.plangrid > div { display: grid; }
+.plangrid b { font-size: 22px; font-weight: 500; }
+.c-plan input[type=number] { font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-transform: none; letter-spacing: 0; }
+.c-plan fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.chk { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
+.chk input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); }
+
 @media (max-width: 520px) {
+  .c-intro h2 { font-size: 30px; }
+  .lrow { grid-template-columns: 1fr auto; }
+  .lrow .cardrow { grid-column: 1 / -1; grid-row: 2; }
   .brand h1 { font-size: 28px; }
   .tabs { width: 100%; }
   .tabs button { flex: 1 1 auto; padding: 6px 8px; font-size: 14px; }
@@ -223,15 +294,21 @@ details[open] summary::after { content: "–"; }
   <header class="top">
     <div class="brand"><h1>Poker<span>tings</span></h1><small>$1/$1 home-game trainer</small></div>
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" data-tab="train" aria-selected="true" id="tab-train">Train</button>
-      <button role="tab" data-tab="quiz" aria-selected="false" id="tab-quiz">Odds quiz</button>
-      <button role="tab" data-tab="learn" aria-selected="false" id="tab-learn">Lessons</button>
+      <button role="tab" data-tab="course" aria-selected="true" id="tab-course">Course</button>
+      <button role="tab" data-tab="train" aria-selected="false" id="tab-train">Train</button>
+      <button role="tab" data-tab="quiz" aria-selected="false" id="tab-quiz">Quiz</button>
+      <button role="tab" data-tab="learn" aria-selected="false" id="tab-learn">Notes</button>
       <button role="tab" data-tab="stats" aria-selected="false" id="tab-stats">Progress</button>
     </nav>
   </header>
 
+  <!-- COURSE -->
+  <section id="view-course" role="tabpanel" aria-labelledby="tab-course">
+    <div id="course"></div>
+  </section>
+
   <!-- TRAIN -->
-  <section id="view-train" role="tabpanel" aria-labelledby="tab-train">
+  <section id="view-train" role="tabpanel" aria-labelledby="tab-train" hidden>
     <div class="scoreline" id="scoreline"></div>
     <div class="controls">
       <div class="field">Drill
@@ -296,4 +373,5 @@ details[open] summary::after { content: "–"; }
 
 <script src="engine.js"></script>
 <script src="coach.js"></script>
+<script src="course.js"></script>
 <script src="app.js"></script>
